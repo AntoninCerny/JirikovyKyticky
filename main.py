@@ -83,13 +83,10 @@ device, dtype
 
 #Keypoint_R-CNN_Krejsa/myOwnWork/
 KEYPOINTS_FOLDER_TRAIN = 'train'
-KEYPOINTS_FOLDER_TEST = 'Keypoint_R-CNN_Krejsa/test'
-KEYPOINTS_FOLDER_PROJECT = 'Keypoint_R-CNN_Krejsa'
 KEYPOINTS_FOLDER_VALID = 'valid'
 training_dataset_path = os.path.join(KEYPOINTS_FOLDER_TRAIN,"images")
 valid_dataset_path = os.path.join(KEYPOINTS_FOLDER_VALID,"images")
-dataset_dir = KEYPOINTS_FOLDER_TRAIN
-project_dir = KEYPOINTS_FOLDER_PROJECT
+
 
 
 # Get a list of image files in the dataset
@@ -129,20 +126,6 @@ model.to(device=device, dtype=dtype);
 model.device = device
 model.name = 'keypointrcnn_resnet50_fpn'
 
-"""
-# Here is model summary 
-# Define the input to the model
-test_inp = torch.randn(1, 3, 256, 256).to(device)
-
-# Get a summary of the model as a Pandas DataFrame
-summary_df = markdown_to_pandas(f"{get_module_summary(model.eval(), [test_inp])}")
-
-# Filter the summary to only contain Conv2d layers and the model
-summary_df = summary_df[summary_df.index == 0]
-
-# Remove the column "Contains Uninitialized Parameters?"
-summary_df.drop(['In size', 'Out size', 'Contains Uninitialized Parameters?'], axis=1)
-"""
 # Create a mapping from class names to class indices
 class_to_idx = {c: i for i, c in enumerate(class_names)}
 
@@ -193,16 +176,6 @@ checkpoint_path = checkpoint_dir/f"{model.name}.pth"
 
 print(checkpoint_path)
 
-"""
-# Create a color map and write it to a JSON file
-color_map = {'items': [{'label': label, 'color': color} for label, color in zip(class_names, colors)]}
-with open(f"{checkpoint_dir}/{training_dataset_path.name}-colormap.json", "w") as file:
-    json.dump(color_map, file)
-
-# Print the name of the file that the color map was written to
-print(f"{checkpoint_dir}/{training_dataset_path.name}-colormap.json")
-
-"""
 # Learning rate for the model
 lr = 3e-4
 
