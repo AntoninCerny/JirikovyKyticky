@@ -10,6 +10,10 @@ from contextlib import contextmanager
 import math
 from pathlib import Path
 import json
+from engine import evaluate
+
+
+
 
 
 def keypoints_to_bbox(keypoints, offset=10):
@@ -101,13 +105,20 @@ def run_epoch(model, dataloader, optimizer, lr_scheduler, device, scaler, epoch_
         with conditional_autocast(torch.device(device).type):
             if is_training:
                 losses = model(inputs.to(device), move_data_to_device(keypoint_rcnn_targets, device))
+                a = 5
+                print(a)
             else:
+                #TODO here switch to eval - now eval isnt working dont know why
+                #model.eval()
                 with torch.no_grad():
                     losses = model(inputs.to(device), move_data_to_device(keypoint_rcnn_targets, device))
+                    
+                    
+                    
         
             # Compute the loss
             loss = sum([loss for loss in losses.values()])  # Sum up the losses
-                
+            
         # If in training mode
         if is_training:
             if scaler:
@@ -184,7 +195,7 @@ def train_loop(model,
         # Run an evaluation epoch and get the validation loss
         with torch.no_grad():
             valid_loss = run_epoch(model, valid_dataloader, None, None, device, scaler, epoch, is_training=False)
-
+            
         # If the validation loss is lower than the best validation loss seen so far, save the model checkpoint
         if valid_loss < best_loss:
             best_loss = valid_loss
@@ -200,11 +211,12 @@ def train_loop(model,
             }
             with open(Path(checkpoint_path.parent/'training_metadata.json'), 'w') as f:
                 json.dump(training_metadata, f)
+        
 
     # If the device is a GPU, empty the cache
     if device.type != 'cpu':
         getattr(torch, device.type).empty_cache()
-
+    
 
 
 

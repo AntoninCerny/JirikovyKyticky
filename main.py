@@ -66,6 +66,7 @@ from torchvision.models.detection.rpn import AnchorGenerator
 
 
 
+
 # Do not truncate the contents of cells and display all rows and columns
 pd.set_option('max_colwidth', None, 'display.max_rows', None, 'display.max_columns', None)
 
@@ -75,9 +76,8 @@ seed = 123
 set_seed(seed)
 
 
-#device = get_torch_device()
 device = get_torch_device()
-#torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+#device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 dtype = torch.float32
 device, dtype
 
@@ -110,11 +110,64 @@ num_keypoints = 3;
 # Load a pre-trained model
 #anchor generator - more options for default anchor - box with interesting area
 anchor_generator = AnchorGenerator(sizes=(32, 64, 128, 256, 512), aspect_ratios=(0.25, 0.5, 0.75, 1.0, 2.0, 3.0, 4.0))
-model = torchvision.models.detection.keypointrcnn_resnet50_fpn(pretrained=False,
+"""model = torchvision.models.detection.keypointrcnn_resnet50_fpn(pretrained=False,
                                                                    pretrained_backbone=True,
                                                                    num_keypoints=num_keypoints,
                                                                    num_classes = 2, # Background is the first class, object is the second class
                                                                    rpn_anchor_generator=anchor_generator)
+
+
+"""
+
+backbone = torchvision.models.mobilenet_v2().features
+backbone.out_channels = 1280
+
+anchor_generator = AnchorGenerator(sizes=((32, 64, 128, 256, 512),),
+                                   aspect_ratios=((0.5, 1.0, 2.0),))
+
+
+roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'],
+                                                 output_size=7,
+                                                 sampling_ratio=2)
+
+keypoint_roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'],
+                                                         output_size=14,
+                                                         sampling_ratio=2)
+ # put the pieces together inside a KeypointRCNN model
+model = torchvision.models.detection.KeypointRCNN(backbone,
+                      num_classes=2,
+                      rpn_anchor_generator=anchor_generator,
+                      box_roi_pool=roi_pooler,
+                      num_keypoints=num_keypoints,
+                      keypoint_roi_pool=keypoint_roi_pooler)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#model.roi_heads.box_predictor.cls_score = torch.nn.Linear(1024,2)
+#model.roi_heads.box_KeypointRCNNPredictor = torch.nn(num_keypoints = 3)
 # Replace the classifier head with the number of keypoints
 #in_features = model.roi_heads.keypoint_predictor.kps_score_lowres.in_channels
 #model.roi_heads.keypoint_predictor = KeypointRCNNPredictor(in_channels=in_features, num_keypoints=len(class_names))
@@ -150,8 +203,6 @@ data_loader_params = {
     'collate_fn': tuple_batch,
 }
 
-
-
 # Create DataLoader for training data. Data is shuffled for every epoch.
 train_dataloader = DataLoader(train_dataset, **data_loader_params, shuffle=True)
 
@@ -177,7 +228,7 @@ checkpoint_path = checkpoint_dir/f"{model.name}.pth"
 print(checkpoint_path)
 
 # Learning rate for the model
-lr = 3e-4
+lr = 1e-6
 
 # Number of training epochs
 epochs = 1
@@ -235,13 +286,49 @@ pd.Series({
 }).to_frame().style.hide(axis='columns')
 
 
-# Set the model to evaluation mode
-model.eval();
-
+"""
 # Ensure the model and input data are on the same device
 model.to(device);
 input_tensor = transforms.Compose([transforms.ToImage(), 
                                    transforms.ToDtype(torch.float32, scale=True)])(input_img)[None].to(device)
+
+iterator = iter(train_dataloader)
+images, targets = next(iterator)
+images = list(image.to(device) for image in images)
+
+
+with torch.no_grad():
+    model.to(device)
+    model.train(mode=False)
+    output = model(images)
+
+print("Predictions: \n", output)
+"""
+# Load the JPG file - thanks chat GPT
+img = Image.open('train/images/RgbImage_2022-05-10_09-05-11-png_2_png.rf.970d4724e63f03b4df10f1a33ab0559f.jpg')
+#img = imgRAW.convert('RGB')
+imgWidth, imgHeight  = img.size
+
+image_np = np.array(img)
+
+image_tensor = torch.from_numpy(image_np)
+image_tensor = image_tensor.permute(2, 0, 1)
+print(image_tensor.shape)
+image_tensor = image_tensor.float() / 255.0
+image_tensor = image_tensor.to(device)
+model.to(device)
+#setting model to eval mode
+#model.eval()
+model.eval()
+#x = [torch.rand(3, 300, 400)]
+x = [image_tensor]
+predictions = model(x)
+print(predictions)
+
+
+
+
+"""
 
 # Make a prediction with the model
 with torch.no_grad():
@@ -260,6 +347,12 @@ predicted_keypoints = (model_output['keypoints'][scores_mask])[:,:,:-1].reshape(
 # Prepare the labels and bounding box annotations for the test image
 labels = class_names*sum(scores_mask).item()
 keypoints_bboxes = torch.cat((predicted_keypoints.cpu(), torch.ones(len(predicted_keypoints), 2)), dim=1)
+
+"""
+
+
+
+
 """
 # Annotate the test image with the model predictions
 annotated_tensor = draw_bboxes(

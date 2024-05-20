@@ -8,6 +8,9 @@ from torchvision import transforms
 from cjm_pil_utils.core import resize_img
 import cv2
 from PIL import Image
+from engine import evaluate
+from main import valid_dataloader
+
 #from main import model
 
 TIMESTAMP_FOLDER = "2024-05-16_14-34-12"
@@ -72,9 +75,16 @@ model.load_state_dict(torch.load(os.path.join(TIMESTAMP_FOLDER,"keypointrcnn_res
 #send model to same device as input tensor
 model.to(device)
 
-model.eval();
-#model.to(device);
+#model.train();
+model.to(device);
 
+evaluate(model, valid_dataloader, device)
+
+
+
+
+
+"""
 # gradients are only usefull for learning 
 with torch.no_grad():
     output = model(input_image)
@@ -116,13 +126,5 @@ draw_predictions_matplotlib(img, bounding_boxes, keypoints)
 
 
 
-
-
-
 """
-#TODO I dont really understand this yet 
-# Ensure the model and input data are on the same device
-model.to(device);
-input_tensor = transforms.Compose([transforms.ToImage(), 
-                                   transforms.ToDtype(torch.float32, scale=True)])(input_img)[None].to(device)
-"""
+
